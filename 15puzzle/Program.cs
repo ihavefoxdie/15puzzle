@@ -75,7 +75,16 @@ namespace Testing
 
         private double Heuristics(StateNode<T> node)
         {
-            return 0;
+            var result = 0;
+
+            for (var i = 0; i < node.State.GetLength(0); i++)
+            {
+                for (var j = 0; j < node.State.GetLength(1); j++)
+                    if (!node.State[i, j].Equals(SolutionState.State[i, j]) && !node.State[i, j].Equals(EmptyTile))
+                        result++;
+            }
+
+            return result;
         }
 
         private void ExpandNodes(StateNode<T> node)
@@ -86,7 +95,7 @@ namespace Testing
             var row = node.EmptyRow;
             StateNode<T> newNode;
 
-            //going up
+            //Moving empty tile up
             if (row > 0)
             {
                 newState = (T[,])node.State.Clone();
@@ -96,6 +105,57 @@ namespace Testing
                 newNode = new StateNode<T>(newState, row - 1, column, node.Depth + 1);
 
                 if (!hash.Contains(newNode.StringRepresentation))
+                {
+                    newNode.F = node.Depth + Heuristics(newNode);
+                    queue.Enqueue(newNode, newNode.F);
+                    hash.Add(newNode.StringRepresentation);
+                }
+            }
+
+            //Moving empty tile down
+            if (row < node.Size - 1)
+            {
+                newState = (T[,])node.State.Clone();
+                temporary = newState[row + 1, column];
+                newState[row + 1, column] = EmptyTile;
+                newState[row, column] = temporary;
+                newNode = new StateNode<T>(newState, row + 1, column, node.Depth + 1);
+
+                if (!hash.Contains(newNode.StringRepresentation))
+                {
+                    newNode.F = node.Depth + Heuristics(newNode);
+                    queue.Enqueue(newNode, newNode.F);
+                    hash.Add(newNode.StringRepresentation);
+                }
+            }
+
+            //Moving empty tile left
+            if (column > 0)
+            {
+                newState = (T[,])node.State.Clone();
+                temporary = newState[row, column - 1];
+                newState[row, column - 1] = EmptyTile;
+                newState[row, column] = temporary;
+                newNode = new StateNode<T>(newState, row, column - 1, node.Depth + 1);
+
+                if (!hash.Contains(newNode.StringRepresentation))
+                {
+                    newNode.F = node.Depth + Heuristics(newNode);
+                    queue.Enqueue(newNode, newNode.F);
+                    hash.Add(newNode.StringRepresentation);
+                }
+            }
+
+            //Moving empty tile right
+            if (column < node.Size - 1)
+            {
+                newState = (T[,])node.State.Clone();
+                temporary = newState[row, column + 1];
+                newState[row, column + 1] = EmptyTile;
+                newState[row, column] = temporary;
+                newNode = new StateNode<T>(newState, row, column + 1, node.Depth + 1);
+
+                if(!hash.Contains(newNode.StringRepresentation))
                 {
                     newNode.F = node.Depth + Heuristics(newNode);
                     queue.Enqueue(newNode, newNode.F);
@@ -129,7 +189,38 @@ namespace Testing
     {
         static void Main()
         {
+            var initWorstConfig3x3 = new[,] {   {8,6,7},
+                                                {2,5,4},
+                                                {3,0,1}
+                                    };
 
+            var initConfig4x4 = new[,] {     {5,10,14,7},
+                                             {8,3,6,1},
+                                             {15,0,12,9},
+                                             {2,11,4,13}
+                                    };
+
+            var finalConfig3x3 = new[,] {    {1,2,3},
+                                             {4,5,6},
+                                             {7,8,0}
+                                    };
+
+            var finalConfig4x4 = new[,] {    {1,2,3,4},
+                                             {5,6,7,8},
+                                             {9,10,11,12},
+                                             {13,14,15,0}
+                                    };
+
+            var initialState = new StateNode<int>(initWorstConfig3x3, 2, 1, 0);
+            var finalState = new StateNode<int>(finalConfig3x3, 2, 2, 0);
+
+            var aStar = new AStar<int>(initialState, finalState, 0);
+
+            var node = aStar.Execute();
+
+            Console.WriteLine("Node at depth {0}", node.Depth);
+            Console.WriteLine("States visited {0}", aStar.StatesChecked);
+            Console.Read();
         }
     }
 }
