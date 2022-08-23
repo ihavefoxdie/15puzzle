@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Testing
 {
-    class StateNode<T> : IComparable<StateNode<T>> where T : IComparable
+    class StateNode<T>
     {
         public double F { get; set; }
         public T[,] State { get; set; }
@@ -12,9 +12,7 @@ namespace Testing
         public int Depth { get; set; }
         public string StringRepresentation { get; set; }
 
-        public StateNode() { }
-
-        public StateNode(T[,] state, int emptyColumn, int emptyRow, int depth)
+        public StateNode(T[,] state, int emptyRow, int emptyColumn, int depth)
         {
             if (state.GetLength(0) != state.GetLength(1))
                 throw new Exception("Number of columns and rows isn't the same!.");
@@ -23,7 +21,8 @@ namespace Testing
             EmptyColumn = emptyColumn;
             EmptyRow = emptyRow;
             Depth = depth;
-            
+            StringRepresentation = "";
+
             for(var i = 0; i < State.GetLength(0); i++)
             {
                 for (var j = 0; j < State.GetLength(1); j++)
@@ -45,19 +44,9 @@ namespace Testing
                 Console.WriteLine();
             }
         }
-
-        public int CompareTo(StateNode<T> other)
-        {
-            if (F > other.F)
-                return 1;
-            if (F < other.F)
-                return -1;
-
-            return 0;
-        }
     }
 
-    class AStar<T> where T : IComparable
+    class AStar<T>
     {
         public int StatesChecked { get; set; }
         private readonly StateNode<T> SolutionState;
@@ -67,6 +56,7 @@ namespace Testing
 
         public AStar(StateNode<T> initial, StateNode<T> solution, T empty)
         {
+            queue = new PriorityQueue<StateNode<T>, double>();
             queue.Enqueue(initial, initial.F);
             SolutionState = solution;
             EmptyTile = empty;
@@ -76,12 +66,30 @@ namespace Testing
         private double Heuristics(StateNode<T> node)
         {
             var result = 0;
-
             for (var i = 0; i < node.State.GetLength(0); i++)
             {
                 for (var j = 0; j < node.State.GetLength(1); j++)
-                    if (!node.State[i, j].Equals(SolutionState.State[i, j]) && !node.State[i, j].Equals(EmptyTile))
-                        result++;
+                {
+                    var elem = node.State[i, j];
+                    if (elem!.Equals(EmptyTile)) continue;
+                    // Variable to break the outer loop and 
+                    // avoid unnecessary processing
+                    var found = false;
+                    // Loop to find element in goal state and MD
+                    for (var h = 0; h < SolutionState.State.GetLength(0); h++)
+                    {
+                        for (var k = 0; k < SolutionState.State.GetLength(1); k++)
+                        {
+                            if (SolutionState.State[h, k]!.Equals(elem))
+                            {
+                                result += Math.Abs(h - i) + Math.Abs(j - k);
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                }
             }
 
             return result;
@@ -166,21 +174,20 @@ namespace Testing
 
         public StateNode<T> Execute()
         {
-            StateNode<T> dequeuedState = queue.Dequeue();
-            hash.Add(dequeuedState.StringRepresentation);
+            hash.Add(queue.Peek().StringRepresentation);
 
-            while(queue.Count > 0)
+            while (queue.Count > 0)
             {
+                var dequeuedElement = queue.Dequeue();
                 StatesChecked++;
 
-                if (dequeuedState.StringRepresentation.Equals(SolutionState.StringRepresentation))
-                    return dequeuedState;
+                if (dequeuedElement.StringRepresentation.Equals(SolutionState.StringRepresentation))
+                    return dequeuedElement;
 
-                ExpandNodes(dequeuedState);
-                dequeuedState = queue.Dequeue();
+                ExpandNodes(dequeuedElement);
             }
 
-            return null;
+            throw new Exception("No solution found!");
         }
     }
 
@@ -194,22 +201,22 @@ namespace Testing
                                                 {3,0,1}
                                     };
 
-            var initConfig4x4 = new[,] {     {5,10,14,7},
+            /*var initConfig4x4 = new[,] {     {5,10,14,7},
                                              {8,3,6,1},
                                              {15,0,12,9},
                                              {2,11,4,13}
-                                    };
+                                    };*/
 
             var finalConfig3x3 = new[,] {    {1,2,3},
                                              {4,5,6},
                                              {7,8,0}
                                     };
 
-            var finalConfig4x4 = new[,] {    {1,2,3,4},
+            /*var finalConfig4x4 = new[,] {    {1,2,3,4},
                                              {5,6,7,8},
                                              {9,10,11,12},
                                              {13,14,15,0}
-                                    };
+                                    };*/
 
             var initialState = new StateNode<int>(initWorstConfig3x3, 2, 1, 0);
             var finalState = new StateNode<int>(finalConfig3x3, 2, 2, 0);
