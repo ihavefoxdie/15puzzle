@@ -28,6 +28,8 @@ namespace Testing
                 for (var j = 0; j < State.GetLength(1); j++)
                     StringRepresentation += state[i, j] + ",";
             }
+            if (StringRepresentation is null)
+                throw new Exception("the array is empty!");
         }
 
         public int Size
@@ -66,16 +68,17 @@ namespace Testing
         private double Heuristics(StateNode<T> node)
         {
             var result = 0;
+            //loop for calculating MD for each element in the array
             for (var i = 0; i < node.State.GetLength(0); i++)
             {
                 for (var j = 0; j < node.State.GetLength(1); j++)
                 {
                     var elem = node.State[i, j];
-                    if (elem!.Equals(EmptyTile)) continue;
-                    // Variable to break the outer loop and 
-                    // avoid unnecessary processing
+                    if (elem!.Equals(EmptyTile)) continue; //MD calculation for empty tiles is not needed
+
                     var found = false;
-                    // Loop to find element in goal state and MD
+
+                    //loop for finding the same element in the goal state to calculate MD
                     for (var h = 0; h < SolutionState.State.GetLength(0); h++)
                     {
                         for (var k = 0; k < SolutionState.State.GetLength(1); k++)
@@ -87,14 +90,15 @@ namespace Testing
                                 break;
                             }
                         }
-                        if (found) break;
+                        if (found)
+                            break;
                     }
                 }
             }
-
             return result;
         }
 
+        //this method creates and enqueues new nodes that are not already included in the queue.
         private void ExpandNodes(StateNode<T> node)
         {
             T temporary;
@@ -172,6 +176,7 @@ namespace Testing
             }
         }
 
+        //this method goes through every state enqueued, creating new ones with the ExpandNodes method until solution is found.
         public StateNode<T> Execute()
         {
             hash.Add(queue.Peek().StringRepresentation);
@@ -187,7 +192,7 @@ namespace Testing
                 ExpandNodes(dequeuedElement);
             }
 
-            throw new Exception("No solution found!");
+            throw new Exception("ERROR! No solution found! Perhaps given puzzle configuration is unsolvable?");
         }
     }
 
