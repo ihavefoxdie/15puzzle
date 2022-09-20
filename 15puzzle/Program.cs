@@ -57,7 +57,6 @@ namespace Testing
         private T EmptyTile { get; set; }
         private readonly PriorityQueue<StateNode<T>, double> queue;
         private readonly HashSet<string> hash;
-        private readonly HashSet<double> _hash;
 
         public AStar(StateNode<T> initial, StateNode<T> solution, T empty)
         {
@@ -68,74 +67,6 @@ namespace Testing
             hash = new HashSet<string>();
         }
 
-        private int LinearConflicts(StateNode<T> node)
-        {
-            var result = 0;
-            var state = node.State;
-
-            // Row Conflicts
-            for (var i = 0; i < state.GetLength(0); i++)
-                result += FindConflicts(state, i, 1);
-
-            // Column Conflicts
-            for (var i = 0; i < state.GetLength(1); i++)
-                result += FindConflicts(state, i, 0);
-
-            return result;
-        }
-
-        private int FindConflicts(T[,] state, int i, int dimension)
-        {
-            var result = 0;
-            var tilesRelated = new List<int>();
-
-            // Loop foreach pair of elements in the row/column
-            for (var h = 0; h < state.GetLength(dimension) - 1 && !tilesRelated.Contains(h); h++)
-            {
-                for (var k = h + 1; k < state.GetLength(dimension) && !tilesRelated.Contains(h); k++)
-                {
-                    // Avoid the empty tile
-                    if (dimension == 1 && state[i, h].Equals(EmptyTile)) continue;
-                    if (dimension == 0 && state[h, i].Equals(EmptyTile)) continue;
-                    if (dimension == 1 && state[i, k].Equals(EmptyTile)) continue;
-                    if (dimension == 0 && state[k, i].Equals(EmptyTile)) continue;
-
-                    var moves = dimension == 1
-                        ? InConflict(i, state[i, h], state[i, k], h, k, dimension)
-                        : InConflict(i, state[h, i], state[k, i], h, k, dimension);
-
-                    if (moves == 0) continue;
-                    result += 2;
-                    tilesRelated.AddRange(new List<int> { h, k });
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        private int InConflict(int index, T a, T b, int indexA, int indexB, int dimension)
-        {
-            var indexGoalA = -1;
-            var indexGoalB = -1;
-
-            for (var c = 0; c < SolutionState.State.GetLength(dimension); c++)
-            {
-                if (dimension == 1 && SolutionState.State[index, c].Equals(a))
-                    indexGoalA = c;
-                else if (dimension == 1 && SolutionState.State[index, c].Equals(b))
-                    indexGoalB = c;
-                else if (dimension == 0 && SolutionState.State[c, index].Equals(a))
-                    indexGoalA = c;
-                else if (dimension == 0 && SolutionState.State[c, index].Equals(b))
-                    indexGoalB = c;
-            }
-
-            return (indexGoalA >= 0 && indexGoalB >= 0) && ((indexA < indexB && indexGoalA > indexGoalB) ||
-                                                            (indexA > indexB && indexGoalA < indexGoalB))
-                       ? 2
-                       : 0;
-        }
 
         private double Heuristics(StateNode<T> node)
         {
